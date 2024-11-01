@@ -35,7 +35,10 @@ function App() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) fetchUserProfile(token);
+    if (token) {
+      fetchUserProfile(token);
+      fetchFriends(token);
+    }
   }, []);
 
   const fetchUserProfile = async (token) => {
@@ -48,6 +51,22 @@ function App() {
       else localStorage.removeItem('token');
     } catch (error) {
       console.error('Profile fetch error', error);
+    }
+  };
+
+  const fetchFriends = async (token) => {
+    try {
+      const response = await fetch('https://your-api-url/api/friends', { // 서버의 친구 목록 API URL
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setFriends(data.friends); // 서버에서 받아온 친구 목록을 상태에 저장
+      } else {
+        console.error('Failed to fetch friends');
+      }
+    } catch (error) {
+      console.error('Error fetching friends:', error);
     }
   };
 
