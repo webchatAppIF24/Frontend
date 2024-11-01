@@ -54,17 +54,20 @@ function App() {
     localStorage.setItem('token', token);
     setCurrentUser(userId);
     setIsRegistering(false);
+    setIsHome(true); // 로그인 시 홈 화면으로 이동
   };
 
   const handleRegisterSuccess = (userId, token) => {
     localStorage.setItem('token', token);
     setCurrentUser(userId);
     setIsRegistering(false);
+    setIsHome(true); // 회원가입 후 로그인 시 홈 화면으로 이동
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     setCurrentUser(null);
+    setIsHome(false); // 로그아웃 시 홈 화면 해제
   };
 
   const handleAddPost = async (newPost) => {
