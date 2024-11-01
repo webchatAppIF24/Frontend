@@ -12,6 +12,7 @@ function App() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [selectedServer, setSelectedServer] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
+  const [isHome, setIsHome] = useState(false); // 홈 화면 상태 추가
   const [channelsByServer, setChannelsByServer] = useState({
     Server1: [
       { name: 'general', type: 'message' },
@@ -24,6 +25,12 @@ function App() {
   });
   const [messagesByServer, setMessagesByServer] = useState({});
   const [postsByServer, setPostsByServer] = useState({});
+  const [friends, setFriends] = useState([
+    { name: 'Alice', profileImage: '' }, // 프로필 이미지 없는 경우
+    { name: 'Bob', profileImage: '' },
+    { name: 'Charlie', profileImage: '' },
+    // 친구 목록 샘플 데이터 추가
+  ]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -153,6 +160,16 @@ function App() {
     }
   };
 
+  const handleHomeSelect = () => {
+    setIsHome(true);
+    setSelectedServer(null);
+  };
+
+  const handleServerSelect = (server) => {
+    setIsHome(false);
+    setSelectedServer(server);
+  };
+
   const selectedChannelType =
     channelsByServer[selectedServer]?.find((ch) => ch.name === selectedChannel)?.type;
 
@@ -161,51 +178,71 @@ function App() {
 
   const selectedPosts = postsByServer[selectedServer] || [];
 
+  const sortedFriends = friends.sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <AppContainer>
       {currentUser ? (
         <>
-          <Sidebar onSelectServer={setSelectedServer} onLogout={handleLogout} />
+          <Sidebar onSelectServer={handleServerSelect} onHomeSelect={handleHomeSelect} onLogout={handleLogout} />
           <ChannelContainer>
-            <ChannelList
-              server={selectedServer}
-              channels={channelsByServer[selectedServer]}
-              onSelectChannel={setSelectedChannel}
-            />
-            {selectedChannelType === 'message' && selectedChannel && (
-              <ChatContainer
-                server={selectedServer}
-                channel={selectedChannel}
-                messages={selectedMessages}
-                onSendMessage={(message) => {
-                  if (!selectedServer || !selectedChannel) return;
-                  const messageObj = { user: currentUser, message, timestamp: new Date() };
-                  const serverMessages = messagesByServer[selectedServer] || {};
-                  const channelMessages = serverMessages[selectedChannel] || [];
-                  const updatedChannelMessages = [...channelMessages, messageObj];
+            {isHome ? (
+              <FriendList>
+                <h3>친구 목록</h3>
+                {sortedFriends.map((friend, index) => (
+                  <FriendItem key={index}>
+                    {friend.profileImage ? (
+                      <ProfileImage src={friend.profileImage} alt={`${friend.name} 프로필`} />
+                    ) : (
+                      <PlaceholderProfile>IF</PlaceholderProfile>
+                    )}
+                    {friend.name}
+                  </FriendItem>
+                ))}
+              </FriendList>
+            ) : (
+              <>
+                <ChannelList
+                  server={selectedServer}
+                  channels={channelsByServer[selectedServer]}
+                  onSelectChannel={setSelectedChannel}
+                />
+                {selectedChannelType === 'message' && selectedChannel && (
+                  <ChatContainer
+                    server={selectedServer}
+                    channel={selectedChannel}
+                    messages={selectedMessages}
+                    onSendMessage={(message) => {
+                      if (!selectedServer || !selectedChannel) return;
+                      const messageObj = { user: currentUser, message, timestamp: new Date() };
+                      const serverMessages = messagesByServer[selectedServer] || {};
+                      const channelMessages = serverMessages[selectedChannel] || [];
+                      const updatedChannelMessages = [...channelMessages, messageObj];
 
-                  const updatedServerMessages = {
-                    ...serverMessages,
-                    [selectedChannel]: updatedChannelMessages
-                  };
+                      const updatedServerMessages = {
+                        ...serverMessages,
+                        [selectedChannel]: updatedChannelMessages
+                      };
 
-                  setMessagesByServer({
-                    ...messagesByServer,
-                    [selectedServer]: updatedServerMessages
-                  });
-                }}
-              />
-            )}
-            {selectedChannelType === 'board' && selectedChannel && (
-              <BulletinBoardContainer
-                server={selectedServer}
-                posts={selectedPosts}
-                currentUser={currentUser}
-                onVotePost={handleVotePost}
-                onAddPost={handleAddPost}
-                onAddComment={handleAddComment}
-                onDeletePost={handleDeletePost}
-              />
+                      setMessagesByServer({
+                        ...messagesByServer,
+                        [selectedServer]: updatedServerMessages
+                      });
+                    }}
+                  />
+                )}
+                {selectedChannelType === 'board' && selectedChannel && (
+                  <BulletinBoardContainer
+                    server={selectedServer}
+                    posts={selectedPosts}
+                    currentUser={currentUser}
+                    onVotePost={handleVotePost}
+                    onAddPost={handleAddPost}
+                    onAddComment={handleAddComment}
+                    onDeletePost={handleDeletePost}
+                  />
+                )}
+              </>
             )}
           </ChannelContainer>
         </>
@@ -228,6 +265,39 @@ const ChannelContainer = styled.div`
   display: flex;
   flex: 1;
   background-color: #36393f;
+`;
+
+const FriendList = styled.div`
+  padding: 20px;
+  color: white;
+`;
+
+const FriendItem = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 16px;
+`;
+
+const ProfileImage = styled.img`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
+`;
+
+const PlaceholderProfile = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #5865f2;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-right: 10px;
 `;
 
 export default App;
