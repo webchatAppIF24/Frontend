@@ -12,11 +12,11 @@ function App() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [selectedServer, setSelectedServer] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
-  const [isHome, setIsHome] = useState(false); // 홈 화면 상태 추가
+  const [isHome, setIsHome] = useState(false);
   const [channelsByServer, setChannelsByServer] = useState({
     Server1: [
-      { name: 'general', type: 'message' },
-      { name: 'bulletin', type: 'board' }
+      { name: '단체 채팅방', type: 'message' },
+      { name: '게시판', type: 'board' }
     ],
     Server2: [
       { name: 'off-topic', type: 'message' },
@@ -26,11 +26,12 @@ function App() {
   const [messagesByServer, setMessagesByServer] = useState({});
   const [postsByServer, setPostsByServer] = useState({});
   const [friends, setFriends] = useState([
-    { name: 'Alice', profileImage: '' }, // 프로필 이미지 없는 경우
+    { name: 'Alice', profileImage: '' },
     { name: 'Bob', profileImage: '' },
     { name: 'Charlie', profileImage: '' },
-    // 친구 목록 샘플 데이터 추가
   ]);
+  const [isAddingFriend, setIsAddingFriend] = useState(false);
+  const [newFriendId, setNewFriendId] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -54,20 +55,20 @@ function App() {
     localStorage.setItem('token', token);
     setCurrentUser(userId);
     setIsRegistering(false);
-    setIsHome(true); // 로그인 시 홈 화면으로 이동
+    setIsHome(true);
   };
 
   const handleRegisterSuccess = (userId, token) => {
     localStorage.setItem('token', token);
     setCurrentUser(userId);
     setIsRegistering(false);
-    setIsHome(true); // 회원가입 후 로그인 시 홈 화면으로 이동
+    setIsHome(true);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     setCurrentUser(null);
-    setIsHome(false); // 로그아웃 시 홈 화면 해제
+    setIsHome(false);
   };
 
   const handleAddPost = async (newPost) => {
@@ -173,6 +174,30 @@ function App() {
     setSelectedServer(server);
   };
 
+  const handleAddFriend = async () => {
+    try {
+      const token = localStorage.getItem('token'); // 인증 토큰 가져오기
+      const response = await fetch('https://7994c571-3331-45c7-8ac1-bc2ceff00d99.mock.pstmn.io', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` // 토큰을 Authorization 헤더에 추가
+        },
+        body: JSON.stringify({ friendId: newFriendId }) // 입력한 친구 ID를 서버로 전송
+      });
+
+      if (response.ok) {
+        const addedFriend = await response.json(); // 추가된 친구 정보를 받아옴
+        setFriends([...friends, addedFriend]); // 받아온 친구 정보를 상태에 추가
+        setNewFriendId(''); // 입력 필드 초기화
+        setIsAddingFriend(false); // 모달 닫기
+      } else {
+        console.error('Failed to add friend');
+      }
+    } catch (error) {
+      console.error('Error adding friend:', error);
+    }
+  };
   const selectedChannelType =
     channelsByServer[selectedServer]?.find((ch) => ch.name === selectedChannel)?.type;
 
@@ -191,6 +216,7 @@ function App() {
           <ChannelContainer>
             {isHome ? (
               <FriendList>
+                <AddFriendButton onClick={() => setIsAddingFriend(true)}>친구추가</AddFriendButton>
                 <h3>친구 목록</h3>
                 {sortedFriends.map((friend, index) => (
                   <FriendItem key={index}>
@@ -202,6 +228,20 @@ function App() {
                     {friend.name}
                   </FriendItem>
                 ))}
+                {isAddingFriend && (
+                  <ModalBackground onClick={() => setIsAddingFriend(false)}>
+                    <ModalContent onClick={(e) => e.stopPropagation()}>
+                      <h3>친구 추가</h3>
+                      <FriendInput
+                        type="text"
+                        value={newFriendId}
+                        onChange={(e) => setNewFriendId(e.target.value)}
+                        placeholder="친구 ID 입력"
+                      />
+                      <ConfirmButton onClick={handleAddFriend}>추가</ConfirmButton>
+                    </ModalContent>
+                  </ModalBackground>
+                )}
               </FriendList>
             ) : (
               <>
@@ -301,6 +341,54 @@ const PlaceholderProfile = styled.div`
   justify-content: center;
   font-size: 16px;
   margin-right: 10px;
+`;
+
+const AddFriendButton = styled.button`
+  margin-top: 10px;
+  padding: 5px 10px;
+  color: white;
+  background-color: #7289da;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+`;
+
+const ModalBackground = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const ModalContent = styled.div`
+  background-color: #2f3136;
+  padding: 20px;
+  border-radius: 8px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const FriendInput = styled.input`
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #7289da;
+  margin-right: 5px;
+`;
+
+const ConfirmButton = styled.button`
+  padding: 5px 10px;
+  color: white;
+  background-color: #7289da;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 `;
 
 export default App;
