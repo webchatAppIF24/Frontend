@@ -25,7 +25,7 @@ function App() {
   });
   const [messagesByServer, setMessagesByServer] = useState({});
   const [postsByServer, setPostsByServer] = useState({});
-  const [friends, setFriends] = useState([
+  const [friends, setFriends] = useState([      //삭제해도 될듯(아래 임시 친구들은)
     { name: 'Alice', profileImage: '' },
     { name: 'Bob', profileImage: '' },
     { name: 'Charlie', profileImage: '' },
