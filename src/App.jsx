@@ -56,7 +56,7 @@ function App() {
 
   const fetchFriends = async (token) => {
     try {
-      const response = await fetch('https://your-api-url/api/friends', { // 서버의 친구 목록 API URL
+      const response = await fetch('https://10dd6129-b412-4497-a6da-b9b1f9e6f5eb.mock.pstmn.io', { // 서버의 친구 목록 API URL
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
