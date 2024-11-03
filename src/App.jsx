@@ -34,6 +34,7 @@ function App() {
   const [newFriendId, setNewFriendId] = useState('');
 
   useEffect(() => {
+    localStorage.removeItem('token');
     const token = localStorage.getItem('token');
     if (token) {
       fetchUserProfile(token);
@@ -43,7 +44,7 @@ function App() {
 
   const fetchUserProfile = async (token) => {
     try {
-      const response = await fetch('/api/user/profile', {
+      const response = await fetch('https://d7308622-e15d-4024-be26-2145b0525cf1.mock.pstmn.io', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
