@@ -183,9 +183,14 @@ function App() {
     }
   };
 
-  const handleHomeSelect = () => {
+  const handleHomeSelect = async () => {
     setIsHome(true);
     setSelectedServer(null);
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      await fetchFriends(token); // 홈 화면 진입 시 최신 친구 리스트 불러오기
+    }
   };
 
   const handleServerSelect = (server) => {
