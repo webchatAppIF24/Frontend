@@ -76,6 +76,7 @@ function App() {
     setCurrentUser(userId);
     setIsRegistering(false);
     setIsHome(true);
+    fetchFriends(token);    //로그인 성공 후 친구목록 최신화
   };
 
   const handleRegisterSuccess = (userId, token) => {
