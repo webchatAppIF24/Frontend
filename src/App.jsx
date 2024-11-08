@@ -6,6 +6,8 @@ import ChatContainer from './components/ChatContainer';
 import BulletinBoardContainer from './components/BulletinBoardContainer';
 import Login from './components/Login';
 import Register from './components/Register';
+import FriendList from './components/FriendList';
+import PrivateChatContainer from './components/PrivateChatContainer';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -25,13 +27,11 @@ function App() {
   });
   const [messagesByServer, setMessagesByServer] = useState({});
   const [postsByServer, setPostsByServer] = useState({});
-  const [friends, setFriends] = useState([      //삭제해도 될듯(아래 임시 친구들은)
-    { name: 'Alice', profileImage: '' },
-    { name: 'Bob', profileImage: '' },
-    { name: 'Charlie', profileImage: '' },
-  ]);
+  const [friends, setFriends] = useState([]);
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   const [newFriendId, setNewFriendId] = useState('');
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [ws, setWs] = useState(null); // WebSocket instance
 
   useEffect(() => {
     localStorage.removeItem('token');
@@ -224,6 +224,41 @@ function App() {
       console.error('Error adding friend:', error);
     }
   };
+
+  const handleFriendClick = (friend) => {
+    setSelectedFriend(friend);
+    const socket = setupWebSocket(friend.id);
+
+    socket.onmessage = (event) => {
+      const receivedMessage = JSON.parse(event.data);
+      console.log('Received message:', receivedMessage);
+      // 필요한 경우 PrivateChatContainer에 메시지를 업데이트하는 코드 추가
+    };
+  };
+
+  const handleSendMessage = (message) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ sender: currentUser, content: message }));
+    }
+  };
+
+  // WebSocket 연결을 설정하는 함수
+  const setupWebSocket = (friendId) => {
+    const socket = new WebSocket(`ws://localhost:4001`); // 서버의 WebSocket URL에 맞춰 조정
+    socket.onopen = () => {
+      console.log('WebSocket connection established');
+    };
+    socket.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+    setWs(socket);
+
+    return socket;
+  };
+
   const selectedChannelType =
     channelsByServer[selectedServer]?.find((ch) => ch.name === selectedChannel)?.type;
 
@@ -241,11 +276,11 @@ function App() {
           <Sidebar onSelectServer={handleServerSelect} onHomeSelect={handleHomeSelect} onLogout={handleLogout} />
           <ChannelContainer>
             {isHome ? (
-              <FriendList>
+              <FriendListContainer>
                 <AddFriendButton onClick={() => setIsAddingFriend(true)}>친구추가</AddFriendButton>
                 <h3>친구 목록</h3>
                 {sortedFriends.map((friend, index) => (
-                  <FriendItem key={index}>
+                  <FriendItem key={index} onClick={() => handleFriendClick(friend)}>
                     {friend.profileImage ? (
                       <ProfileImage src={friend.profileImage} alt={`${friend.name} 프로필`} />
                     ) : (
@@ -268,7 +303,7 @@ function App() {
                     </ModalContent>
                   </ModalBackground>
                 )}
-              </FriendList>
+              </FriendListContainer>
             ) : (
               <>
                 <ChannelList
@@ -313,6 +348,12 @@ function App() {
                 )}
               </>
             )}
+            {selectedFriend && (
+              <PrivateChatContainer
+                friend={selectedFriend}
+                onSendMessage={handleSendMessage}
+              />
+            )}
           </ChannelContainer>
         </>
       ) : isRegistering ? (
@@ -336,7 +377,7 @@ const ChannelContainer = styled.div`
   background-color: #36393f;
 `;
 
-const FriendList = styled.div`
+const FriendListContainer = styled.div`
   padding: 20px;
   color: white;
 `;
