@@ -12,18 +12,19 @@ const PrivateChatContainer = ({ friend, onSendMessage }) => {
   useEffect(() => {
     const loadMessages = async () => {
       try {
-        const token = localStorage.getItem('token'); // 인증 토큰이 필요한 경우 가져오기
+        const token = localStorage.getItem('token');
         const response = await fetch(`https://7f8ce0d1-2f4f-4ae6-8939-087b6bfa82bc.mock.pstmn.io`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`, // 필요 시 토큰 추가
+            'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ friendId: friend.id }), // 요청에 friend.id 포함
+          body: JSON.stringify({ friendId: friend.id }),
         });
         const data = await response.json();
         if (response.ok) {
-          setMessages(data.messages); // 서버에서 받은 기존 메시지 내역을 상태에 저장
+          setMessages(data.messages);
+          console.log("data.Message:", data.messages); // 추가하여 데이터 확인
         } else {
           console.error('Failed to load message history');
         }
@@ -31,10 +32,10 @@ const PrivateChatContainer = ({ friend, onSendMessage }) => {
         console.error('Error loading message history:', error);
       }
     };
-  
+
     loadMessages();
   }, [friend]);
-  
+
 
   // 2. WebSocket 연결 설정
   useEffect(() => {
@@ -46,13 +47,19 @@ const PrivateChatContainer = ({ friend, onSendMessage }) => {
     };
 
     socketRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const newMessage = {
-        sender: friend.name,  // 예시로 설정한 sender
-        content: data.message,
-        timestamp: data.timestamp,  // 서버에서 받은 timestamp 사용
-      };
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Received data:", data); // 추가하여 데이터 확인
+        const newMessage = {
+          sender: data.sender === 'currentUser' ? '나' : friend.name,
+          content: data.content,
+          timestamp: data.timestamp,
+        };
+        console.log("newMessage:", newMessage); // 추가하여 데이터 확인
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      } catch (error) {
+        console.error("Failed to parse message:", error);
+      }
     };
 
     socketRef.current.onclose = () => {
@@ -186,7 +193,7 @@ const MessageContent = styled.div`
 
 const Time = styled.div`
   font-size: 12px;
-  color: #000000; /* 진한 검정색으로 설정 */
+  color: #000000;
   text-align: right;
   margin-top: 4px;
 `;
