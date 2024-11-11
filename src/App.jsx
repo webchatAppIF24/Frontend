@@ -198,6 +198,7 @@ function App() {
   const handleServerSelect = (server) => {
     setIsHome(false);
     setSelectedServer(server);
+    setSelectedChannel(null);
   };
 
   const handleAddFriend = async () => {
