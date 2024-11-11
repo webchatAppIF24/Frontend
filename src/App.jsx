@@ -380,6 +380,7 @@ const ChannelContainer = styled.div`
 const FriendListContainer = styled.div`
   padding: 20px;
   color: white;
+  width: 250px;
 `;
 
 const FriendItem = styled.div`

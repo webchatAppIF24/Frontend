@@ -17,6 +17,7 @@ const FriendList = ({ friends, onFriendClick }) => (
 const ListContainer = styled.div`
   padding: 20px;
   overflow-y: auto;
+  width: 250px;
 `;
 
 const FriendItemContainer = styled.div`
