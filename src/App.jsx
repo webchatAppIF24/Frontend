@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Sidebar from './components/Sidebar';
 import ChannelList from './components/ChannelList';
-import ChatContainer from './components/ChatContainer';
+import ChatContainer from './components/PublicChatContainer';
 import BulletinBoardContainer from './components/BulletinBoardContainer';
 import Login from './components/Login';
 import Register from './components/Register';
