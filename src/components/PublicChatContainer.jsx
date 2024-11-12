@@ -1,27 +1,82 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 
-const ChatContainer = ({ server, channel, messages, onSendMessage }) => {
+const PublicChatContainer = ({ server, channel, onSendMessage }) => {
   const messagesEndRef = useRef(null);
-  const [inputValue, setInputValue] = useState('');
+  const socketRef = useRef(null); // WebSocket 연결을 관리하는 ref
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState(''); // inputValue로 변경
 
   // 스크롤을 메시지 끝으로 내리기
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  // WebSocket 연결 설정
+  useEffect(() => {
+    // WebSocket 연결 생성
+    socketRef.current = new WebSocket(`ws://localhost:4002`);
+
+    socketRef.current.onopen = () => {
+      console.log('WebSocket connection established');
+    };
+
+    socketRef.current.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Received data(PublicChatContainer.jsx):", data); // 데이터 확인용 로그
+        const newMessage = {
+          sender: data.sender === 'currentUser' ? '나' : data.sender,
+          content: data.content,
+          timestamp: data.timestamp,
+        };
+        console.log("newMessage(PublicChatContainer.jsx):", newMessage); // 추가하여 데이터 확인
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      } catch (error) {
+        console.error("Failed to parse message:", error);
+      }
+    };
+
+    socketRef.current.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
+
+    socketRef.current.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    return () => {
+      // 컴포넌트가 unmount될 때 WebSocket 연결을 닫음
+      socketRef.current.close();
+    };
+  }, [server, channel]); // 서버나 채널이 변경될 때마다 새 WebSocket 연결을 설정
+
+  useEffect(() => {
+    // 메시지가 추가될 때마다 스크롤을 맨 아래로 이동
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   // 메시지 전송 처리
   const handleSendMessage = () => {
-    if (inputValue.trim() !== '') {
-      onSendMessage(inputValue);
-      setInputValue(''); // 메시지 전송 후 입력창 초기화
+    if (!inputValue.trim()) return; // inputValue로 변경
+
+    const newMessage = {
+      sender: 'currentUser', // 현재 사용자의 정보로 설정
+      content: inputValue, // inputValue로 변경
+      timestamp: new Date().toISOString(),
+    };
+
+    // WebSocket을 통해 메시지를 서버로 전송
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify(newMessage));
     }
+
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
+    setInputValue(''); // 메시지 전송 후 입력창 초기화
   };
 
   // 키보드 입력 처리: Enter로 전송, Shift+Enter로 줄바꿈
@@ -33,7 +88,9 @@ const ChatContainer = ({ server, channel, messages, onSendMessage }) => {
   };
 
   // 줄바꿈(\n)을 <br />로 변환하여 출력
+  // 메시지를 줄바꿈 처리해주는 함수
   const formatMessage = (message) => {
+    if (typeof message !== 'string') return ''; // message가 문자열이 아닐 경우 빈 문자열 반환
     return message.split('\n').map((line, index) => (
       <span key={index}>
         {line}
@@ -42,6 +99,7 @@ const ChatContainer = ({ server, channel, messages, onSendMessage }) => {
     ));
   };
 
+
   return (
     <Container>
       <Header>
@@ -49,12 +107,12 @@ const ChatContainer = ({ server, channel, messages, onSendMessage }) => {
       </Header>
       <MessagesContainer>
         {messages.map((message, index) => (
-          <MessageContainer key={index} isCurrentUser={message.user === 'currentUser'}>
-            <Sender isCurrentUser={message.user === 'currentUser'}>
-              {message.user === 'currentUser' ? '나' : message.user}
+          <MessageContainer key={index} isCurrentUser={message.sender === 'currentUser'}>
+            <Sender isCurrentUser={message.sender === 'currentUser'}>
+              {message.sender === 'currentUser' ? '나' : message.sender}
             </Sender>
-            <MessageBox isCurrentUser={message.user === 'currentUser'}>
-              <MessageContent>{formatMessage(message.message)}</MessageContent>
+            <MessageBox isCurrentUser={message.sender === 'currentUser'}>
+              <MessageContent>{formatMessage(message.content)}</MessageContent>
               <Time>{new Date(message.timestamp).toLocaleTimeString()}</Time>
             </MessageBox>
           </MessageContainer>
@@ -75,6 +133,7 @@ const ChatContainer = ({ server, channel, messages, onSendMessage }) => {
   );
 };
 
+// 스타일 컴포넌트 코드
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -172,4 +231,4 @@ const SendButton = styled.button`
   }
 `;
 
-export default ChatContainer;
+export default PublicChatContainer;
