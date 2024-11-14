@@ -28,7 +28,6 @@ const Register = ({ onRegisterSuccess }) => {
             const data = await response.json();
 
             if (response.ok) {
-                onRegisterSuccess(data.userId, data.token); // 회원가입 성공 시 사용자 ID와 토큰을 전달
                 onRegisterSuccess();        //회원 가입 후 로그인 화면으로 이동 (직접 아이디와 패스워드를 입력하여 로그인하도록)
             } else {
                 setError(data.message || '회원가입에 실패했습니다.');
