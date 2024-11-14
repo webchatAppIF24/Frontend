@@ -95,7 +95,7 @@ function App() {
   const handleAddPost = async (newPost) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/posts', {
+      const response = await fetch('https://84411a41-fe4c-4b56-8980-04e05c537509.mock.pstmn.io', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
