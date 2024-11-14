@@ -92,8 +92,34 @@ function App() {
     setIsHome(false);
   };
 
+  const handleChannelSelect = async (channelName) => {
+    setSelectedChannel(channelName);
+
+    if (channelName === '게시판') {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`https://036bb129-e993-4f7e-8b7f-5fd77a2ab104.mock.pstmn.io`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setPostsByServer((prevPosts) => ({
+            ...prevPosts,
+            [selectedServer]: data.posts,
+          }));
+        } else {
+          console.error('Failed to fetch posts');
+        }
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    }
+  };
+
   const handleAddPost = async (newPost) => {
     try {
+      console.log("JSON.stringify(newPost):", JSON.stringify(newPost));
+
       const token = localStorage.getItem('token');
       const response = await fetch('https://84411a41-fe4c-4b56-8980-04e05c537509.mock.pstmn.io', {
         method: 'POST',
@@ -103,17 +129,23 @@ function App() {
         },
         body: JSON.stringify(newPost)
       });
-      const createdPost = await response.json();
-      if (response.ok) {
-        setPostsByServer((prevPosts) => ({
-          ...prevPosts,
-          [selectedServer]: [...(prevPosts[selectedServer] || []), createdPost]
-        }));
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
+
+      // 응답이 비어 있지 않으면 JSON 파싱 시도
+      const createdPost = await response.json();
+
+      setPostsByServer((prevPosts) => ({
+        ...prevPosts,
+        [selectedServer]: [...(prevPosts[selectedServer] || []), createdPost]
+      }));
     } catch (error) {
       console.error('Error adding post:', error);
     }
   };
+
 
   const handleDeletePost = async (index) => {
     try {
@@ -310,7 +342,7 @@ function App() {
                 <ChannelList
                   server={selectedServer}
                   channels={channelsByServer[selectedServer]}
-                  onSelectChannel={setSelectedChannel}
+                  onSelectChannel={handleChannelSelect}
                 />
                 {selectedChannelType === 'message' && selectedChannel && (
                   <ChatContainer
