@@ -6,7 +6,7 @@ import ChatContainer from './components/PublicChatContainer';
 import BulletinBoardContainer from './components/BulletinBoardContainer';
 import Login from './components/Login';
 import Register from './components/Register';
-import FriendList from './components/FriendList';
+//import FriendList from './components/FriendList';
 import PrivateChatContainer from './components/PrivateChatContainer';
 
 function App() {
