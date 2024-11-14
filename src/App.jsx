@@ -146,19 +146,16 @@ function App() {
     }
   };
 
-
-  const handleDeletePost = async (index) => {
+  const handleDeletePost = async (postId) => {
     try {
       const token = localStorage.getItem('token');
-      const postId = postsByServer[selectedServer][index].id;
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         setPostsByServer((prevPosts) => {
-          const serverPosts = [...prevPosts[selectedServer]];
-          serverPosts.splice(index, 1);
+          const serverPosts = prevPosts[selectedServer].filter((post) => post.id !== postId);
           return { ...prevPosts, [selectedServer]: serverPosts };
         });
       }
@@ -167,10 +164,9 @@ function App() {
     }
   };
 
-  const handleAddComment = async (index, comment) => {
+  const handleAddComment = async (postId, comment) => {
     try {
       const token = localStorage.getItem('token');
-      const postId = postsByServer[selectedServer][index].id;
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: {
@@ -182,8 +178,9 @@ function App() {
       const updatedPost = await response.json();
       if (response.ok) {
         setPostsByServer((prevPosts) => {
-          const serverPosts = [...prevPosts[selectedServer]];
-          serverPosts[index] = updatedPost;
+          const serverPosts = prevPosts[selectedServer].map((post) =>
+            post.id === postId ? updatedPost : post
+          );
           return { ...prevPosts, [selectedServer]: serverPosts };
         });
       }
@@ -192,10 +189,9 @@ function App() {
     }
   };
 
-  const handleVotePost = async (index, voteType) => {
+  const handleVotePost = async (postId, voteType) => {
     try {
       const token = localStorage.getItem('token');
-      const postId = postsByServer[selectedServer][index].id;
       const response = await fetch(`/api/posts/${postId}/vote`, {
         method: 'POST',
         headers: {
@@ -207,8 +203,9 @@ function App() {
       const updatedPost = await response.json();
       if (response.ok) {
         setPostsByServer((prevPosts) => {
-          const serverPosts = [...prevPosts[selectedServer]];
-          serverPosts[index] = updatedPost;
+          const serverPosts = prevPosts[selectedServer].map((post) =>
+            post.id === postId ? updatedPost : post
+          );
           return { ...prevPosts, [selectedServer]: serverPosts };
         });
       }
