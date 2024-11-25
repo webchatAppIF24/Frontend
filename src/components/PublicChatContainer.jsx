@@ -12,6 +12,36 @@ const PublicChatContainer = ({ server, channel, onSendMessage }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // 채팅 기록 불러오기 추가
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      try {
+        const token = localStorage.getItem('token'); // 토큰 가져오기
+        const response = await fetch(`/api/public-chat/history`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ server, channel }), // 서버와 채널 정보 전달
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setMessages(data.messages); // 이전 메시지 상태에 저장
+          console.log('Chat history loaded:', data.messages); // 디버깅용
+        } else {
+          console.error('Failed to fetch chat history:', data);
+        }
+      } catch (error) {
+        console.error('Error fetching chat history:', error);
+      }
+    };
+
+    if (server && channel) {
+      fetchChatHistory(); // 서버와 채널이 선택되었을 때만 호출
+    }
+  }, [server, channel]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
