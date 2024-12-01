@@ -34,7 +34,7 @@ function App() {
   const [ws, setWs] = useState(null); // WebSocket instance
 
   useEffect(() => {
-    localStorage.removeItem('token');
+    //localStorage.removeItem('token');
     const token = localStorage.getItem('token');
     if (token) {
       fetchUserProfile(token);
@@ -43,13 +43,13 @@ function App() {
   }, []);
 
   const fetchUserProfile = async (token) => {
-    try {
-      const response = await fetch('https://d7308622-e15d-4024-be26-2145b0525cf1.mock.pstmn.io', {
-        headers: { Authorization: `Bearer ${token}` }
+    try {       // https://d7308622-e15d-4024-be26-2145b0525cf1.mock.pstmn.io -> postman url
+      const response = await fetch('', {
+        headers: { Authorization: token }
       });
       const data = await response.json();
       if (response.ok) setCurrentUser(data.userId);
-      else localStorage.removeItem('token');
+      else;//localStorage.removeItem('token');
     } catch (error) {
       console.error('Profile fetch error', error);
     }
@@ -57,10 +57,13 @@ function App() {
 
   const fetchFriends = async (token) => {
     try {
-      const response = await fetch('https://10dd6129-b412-4497-a6da-b9b1f9e6f5eb.mock.pstmn.io', { // 서버의 친구 목록 API URL
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await fetch('http://localhost:8080/api/friends/list', { // 서버의 친구 목록 API URL
+        headers: { Authorization: token }
       });
       const data = await response.json();
+
+      console.log('fetchFriends data : ', data);
+
       if (response.ok) {
         setFriends(data.friends); // 서버에서 받아온 친구 목록을 상태에 저장
       } else {
@@ -73,6 +76,7 @@ function App() {
 
   const handleLoginSuccess = (userId, token) => {
     localStorage.setItem('token', token);
+    console.log('login success token : ', token);
     setCurrentUser(userId);
     setIsRegistering(false);
     setIsHome(true);
@@ -232,18 +236,24 @@ function App() {
 
   const handleAddFriend = async () => {
     try {
-      const token = localStorage.getItem('token'); // 인증 토큰 가져오기
-      const response = await fetch('https://7994c571-3331-45c7-8ac1-bc2ceff00d99.mock.pstmn.io', {
+      const token = localStorage.getItem('token')?.trim(); // 인증 토큰 가져오기
+      // https://7994c571-3331-45c7-8ac1-bc2ceff00d99.mock.pstmn.io
+      console.log("handleAddFriend token : ", token);
+
+      const response = await fetch('http://localhost:8080/api/friends/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` // 토큰을 Authorization 헤더에 추가
+          Authorization: token // 토큰을 Authorization 헤더에 추가
         },
-        body: JSON.stringify({ friendId: newFriendId }) // 입력한 친구 ID를 서버로 전송
+        body: JSON.stringify({ friendLoginId: newFriendId }) // 입력한 친구 ID를 서버로 전송
       });
 
       if (response.ok) {
+        console.log('add friend respose : ', response);
+        console.log('add friend respose.text : ', response.text);
         const addedFriend = await response.json(); // 추가된 친구 정보를 받아옴
+        console.log("addfriend addedFriend : ", addedFriend);
         setFriends([...friends, addedFriend]); // 받아온 친구 정보를 상태에 추가
         setNewFriendId(''); // 입력 필드 초기화
         setIsAddingFriend(false); // 모달 닫기
@@ -297,7 +307,7 @@ function App() {
 
   const selectedPosts = postsByServer[selectedServer] || [];
 
-  const sortedFriends = friends.sort((a, b) => a.name.localeCompare(b.name));
+  const sortedFriends = (friends || []).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <AppContainer>
