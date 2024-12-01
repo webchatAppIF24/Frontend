@@ -102,14 +102,17 @@ function App() {
     if (channelName === '게시판') {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`https://036bb129-e993-4f7e-8b7f-5fd77a2ab104.mock.pstmn.io`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await fetch(`http://localhost:8080/api/posts`, {
+          headers: { Authorization: token },
         });
         const data = await response.json();
+
+        console.log('handleChannelSelect response data : ', data);
+
         if (response.ok) {
           setPostsByServer((prevPosts) => ({
             ...prevPosts,
-            [selectedServer]: data.posts,
+            [selectedServer]: data,
           }));
         } else {
           console.error('Failed to fetch posts');
@@ -125,21 +128,26 @@ function App() {
       console.log("JSON.stringify(newPost):", JSON.stringify(newPost));
 
       const token = localStorage.getItem('token');
-      const response = await fetch('https://84411a41-fe4c-4b56-8980-04e05c537509.mock.pstmn.io', {
+      const response = await fetch('http://localhost:8080/api/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: token
         },
         body: JSON.stringify(newPost)
       });
+
+      console.log('handleAddPost body : ', JSON.stringify(newPost));
 
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
 
       // 응답이 비어 있지 않으면 JSON 파싱 시도
+
       const createdPost = await response.json();
+
+      console.log('handleAddPost respose createdPost : ', createdPost);
 
       setPostsByServer((prevPosts) => ({
         ...prevPosts,
@@ -153,7 +161,7 @@ function App() {
   const handleDeletePost = async (postId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`http://localhost:8080/api/board/${postId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -171,22 +179,33 @@ function App() {
   const handleAddComment = async (postId, comment) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+
+      console.log('handleAddComment token : ', token);
+
+      const response = await fetch(`http://localhost:8080/api/board/posts/${postId + 1}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: token
         },
         body: JSON.stringify({ comment })
       });
+      // 응답 본문을 텍스트로 출력
+      const responseBody = await response.text();
+      console.log('handleAddComment response : ', response);
+
       const updatedPost = await response.json();
+
+      console.log('handleAddComment updatedPost : ', updatedPost);
+
       if (response.ok) {
-        setPostsByServer((prevPosts) => {
-          const serverPosts = prevPosts[selectedServer].map((post) =>
-            post.id === postId ? updatedPost : post
-          );
-          return { ...prevPosts, [selectedServer]: serverPosts };
-        });
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: [...post.comments, newComment] // 기존 댓글 목록에 새 댓글 추가
+          };
+        }
+        return post;
       }
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -196,7 +215,7 @@ function App() {
   const handleVotePost = async (postId, voteType) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/posts/${postId}/vote`, {
+      const response = await fetch(`http://localhost:8080/api/posts/${postId}/vote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
