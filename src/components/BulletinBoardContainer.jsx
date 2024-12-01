@@ -42,7 +42,7 @@ const BulletinBoardContainer = ({ server, posts, onVotePost, onAddComment, onAdd
 
   return (
     <BoardContainer>
-      {!selectedPostIndex && !isWritingPost && (
+      {selectedPostIndex === null && !isWritingPost && (
         <>
           <PostHeader>
             <h3>{server} 게시판</h3>

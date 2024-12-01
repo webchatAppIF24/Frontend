@@ -2,24 +2,27 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 
 const Login = ({ onLoginSuccess, onRegister }) => {
-    const [id, setId] = useState('');
+    const [loginId, setloginId] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
 
     const handleLogin = async () => {
-        try {
-            const response = await fetch('https://8a2257e5-db34-401e-950e-a59b46d67e57.mock.pstmn.io/api/auth/login', {
+        try {   //https://8a2257e5-db34-401e-950e-a59b46d67e57.mock.pstmn.io/api/auth/login -> postman url 주소
+            console.log('body : ', JSON.stringify({ loginId, password }));   //디버깅용
+
+            const response = await fetch('http://localhost:8080/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, password }),
+                body: JSON.stringify({ loginId, password }),
             });
 
-            const data = await response.json();
+            const token = response.headers.get('Authorization'); // 서버가 'Authorization' 헤더에 JWT를 보냄
+            console.log('JWT Token => ', token);
 
             if (response.ok) {
-                onLoginSuccess(data.userId, data.token); // 로그인 성공 시 사용자 ID와 토큰을 전달
+                onLoginSuccess(loginId, token); // 로그인 성공 시 사용자 loginId와 토큰을 전달
             } else {
-                setError(data.message || '아이디 또는 비밀번호가 잘못되었습니다.');
+                setError('아이디 또는 비밀번호가 잘못되었습니다.');
             }
         } catch (error) {
             setError('서버에 연결할 수 없습니다.');
@@ -33,8 +36,8 @@ const Login = ({ onLoginSuccess, onRegister }) => {
             <Input
                 type="text"
                 placeholder="아이디"
-                value={id}
-                onChange={(e) => setId(e.target.value)}
+                value={loginId}
+                onChange={(e) => setloginId(e.target.value)}
             />
             <Input
                 type="password"

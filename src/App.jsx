@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Sidebar from './components/Sidebar';
 import ChannelList from './components/ChannelList';
-import ChatContainer from './components/ChatContainer';
+import ChatContainer from './components/PublicChatContainer';
 import BulletinBoardContainer from './components/BulletinBoardContainer';
 import Login from './components/Login';
 import Register from './components/Register';
-import FriendList from './components/FriendList';
+//import FriendList from './components/FriendList';
 import PrivateChatContainer from './components/PrivateChatContainer';
 
 function App() {
@@ -34,7 +34,7 @@ function App() {
   const [ws, setWs] = useState(null); // WebSocket instance
 
   useEffect(() => {
-    localStorage.removeItem('token');
+    //localStorage.removeItem('token');
     const token = localStorage.getItem('token');
     if (token) {
       fetchUserProfile(token);
@@ -43,13 +43,13 @@ function App() {
   }, []);
 
   const fetchUserProfile = async (token) => {
-    try {
-      const response = await fetch('https://d7308622-e15d-4024-be26-2145b0525cf1.mock.pstmn.io', {
-        headers: { Authorization: `Bearer ${token}` }
+    try {       // https://d7308622-e15d-4024-be26-2145b0525cf1.mock.pstmn.io -> postman url
+      const response = await fetch('', {
+        headers: { Authorization: token }
       });
       const data = await response.json();
       if (response.ok) setCurrentUser(data.userId);
-      else localStorage.removeItem('token');
+      else;//localStorage.removeItem('token');
     } catch (error) {
       console.error('Profile fetch error', error);
     }
@@ -57,10 +57,13 @@ function App() {
 
   const fetchFriends = async (token) => {
     try {
-      const response = await fetch('https://10dd6129-b412-4497-a6da-b9b1f9e6f5eb.mock.pstmn.io', { // 서버의 친구 목록 API URL
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await fetch('http://localhost:8080/api/friends/list', { // 서버의 친구 목록 API URL
+        headers: { Authorization: token }
       });
       const data = await response.json();
+
+      console.log('fetchFriends data : ', data);
+
       if (response.ok) {
         setFriends(data.friends); // 서버에서 받아온 친구 목록을 상태에 저장
       } else {
@@ -73,6 +76,7 @@ function App() {
 
   const handleLoginSuccess = (userId, token) => {
     localStorage.setItem('token', token);
+    console.log('login success token : ', token);
     setCurrentUser(userId);
     setIsRegistering(false);
     setIsHome(true);
@@ -92,41 +96,78 @@ function App() {
     setIsHome(false);
   };
 
+  const handleChannelSelect = async (channelName) => {
+    setSelectedChannel(channelName);
+
+    if (channelName === '게시판') {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:8080/api/posts`, {
+          headers: { Authorization: token },
+        });
+        const data = await response.json();
+
+        console.log('handleChannelSelect response data : ', data);
+
+        if (response.ok) {
+          setPostsByServer((prevPosts) => ({
+            ...prevPosts,
+            [selectedServer]: data,
+          }));
+        } else {
+          console.error('Failed to fetch posts');
+        }
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    }
+  };
+
   const handleAddPost = async (newPost) => {
     try {
+      console.log("JSON.stringify(newPost):", JSON.stringify(newPost));
+
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/posts', {
+      const response = await fetch('http://localhost:8080/api/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: token
         },
         body: JSON.stringify(newPost)
       });
-      const createdPost = await response.json();
-      if (response.ok) {
-        setPostsByServer((prevPosts) => ({
-          ...prevPosts,
-          [selectedServer]: [...(prevPosts[selectedServer] || []), createdPost]
-        }));
+
+      console.log('handleAddPost body : ', JSON.stringify(newPost));
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
+
+      // 응답이 비어 있지 않으면 JSON 파싱 시도
+
+      const createdPost = await response.json();
+
+      console.log('handleAddPost respose createdPost : ', createdPost);
+
+      setPostsByServer((prevPosts) => ({
+        ...prevPosts,
+        [selectedServer]: [...(prevPosts[selectedServer] || []), createdPost]
+      }));
     } catch (error) {
       console.error('Error adding post:', error);
     }
   };
 
-  const handleDeletePost = async (index) => {
+  const handleDeletePost = async (postId) => {
     try {
       const token = localStorage.getItem('token');
-      const postId = postsByServer[selectedServer][index].id;
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`http://localhost:8080/api/board/${postId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         setPostsByServer((prevPosts) => {
-          const serverPosts = [...prevPosts[selectedServer]];
-          serverPosts.splice(index, 1);
+          const serverPosts = prevPosts[selectedServer].filter((post) => post.id !== postId);
           return { ...prevPosts, [selectedServer]: serverPosts };
         });
       }
@@ -135,36 +176,46 @@ function App() {
     }
   };
 
-  const handleAddComment = async (index, comment) => {
+  const handleAddComment = async (postId, comment) => {
     try {
       const token = localStorage.getItem('token');
-      const postId = postsByServer[selectedServer][index].id;
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+
+      console.log('handleAddComment token : ', token);
+
+      const response = await fetch(`http://localhost:8080/api/board/posts/${postId + 1}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: token
         },
         body: JSON.stringify({ comment })
       });
+      // 응답 본문을 텍스트로 출력
+      const responseBody = await response.text();
+      console.log('handleAddComment response : ', response);
+
       const updatedPost = await response.json();
+
+      console.log('handleAddComment updatedPost : ', updatedPost);
+
       if (response.ok) {
-        setPostsByServer((prevPosts) => {
-          const serverPosts = [...prevPosts[selectedServer]];
-          serverPosts[index] = updatedPost;
-          return { ...prevPosts, [selectedServer]: serverPosts };
-        });
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: [...post.comments, newComment] // 기존 댓글 목록에 새 댓글 추가
+          };
+        }
+        return post;
       }
     } catch (error) {
       console.error('Error adding comment:', error);
     }
   };
 
-  const handleVotePost = async (index, voteType) => {
+  const handleVotePost = async (postId, voteType) => {
     try {
       const token = localStorage.getItem('token');
-      const postId = postsByServer[selectedServer][index].id;
-      const response = await fetch(`/api/posts/${postId}/vote`, {
+      const response = await fetch(`http://localhost:8080/api/posts/${postId}/vote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -175,8 +226,9 @@ function App() {
       const updatedPost = await response.json();
       if (response.ok) {
         setPostsByServer((prevPosts) => {
-          const serverPosts = [...prevPosts[selectedServer]];
-          serverPosts[index] = updatedPost;
+          const serverPosts = prevPosts[selectedServer].map((post) =>
+            post.id === postId ? updatedPost : post
+          );
           return { ...prevPosts, [selectedServer]: serverPosts };
         });
       }
@@ -198,22 +250,29 @@ function App() {
   const handleServerSelect = (server) => {
     setIsHome(false);
     setSelectedServer(server);
+    setSelectedChannel(null);
   };
 
   const handleAddFriend = async () => {
     try {
-      const token = localStorage.getItem('token'); // 인증 토큰 가져오기
-      const response = await fetch('https://7994c571-3331-45c7-8ac1-bc2ceff00d99.mock.pstmn.io', {
+      const token = localStorage.getItem('token')?.trim(); // 인증 토큰 가져오기
+      // https://7994c571-3331-45c7-8ac1-bc2ceff00d99.mock.pstmn.io
+      console.log("handleAddFriend token : ", token);
+
+      const response = await fetch('http://localhost:8080/api/friends/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` // 토큰을 Authorization 헤더에 추가
+          Authorization: token // 토큰을 Authorization 헤더에 추가
         },
-        body: JSON.stringify({ friendId: newFriendId }) // 입력한 친구 ID를 서버로 전송
+        body: JSON.stringify({ friendLoginId: newFriendId }) // 입력한 친구 ID를 서버로 전송
       });
 
       if (response.ok) {
+        console.log('add friend respose : ', response);
+        console.log('add friend respose.text : ', response.text);
         const addedFriend = await response.json(); // 추가된 친구 정보를 받아옴
+        console.log("addfriend addedFriend : ", addedFriend);
         setFriends([...friends, addedFriend]); // 받아온 친구 정보를 상태에 추가
         setNewFriendId(''); // 입력 필드 초기화
         setIsAddingFriend(false); // 모달 닫기
@@ -267,7 +326,7 @@ function App() {
 
   const selectedPosts = postsByServer[selectedServer] || [];
 
-  const sortedFriends = friends.sort((a, b) => a.name.localeCompare(b.name));
+  const sortedFriends = (friends || []).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <AppContainer>
@@ -309,7 +368,7 @@ function App() {
                 <ChannelList
                   server={selectedServer}
                   channels={channelsByServer[selectedServer]}
-                  onSelectChannel={setSelectedChannel}
+                  onSelectChannel={handleChannelSelect}
                 />
                 {selectedChannelType === 'message' && selectedChannel && (
                   <ChatContainer
@@ -380,6 +439,7 @@ const ChannelContainer = styled.div`
 const FriendListContainer = styled.div`
   padding: 20px;
   color: white;
+  width: 250px;
 `;
 
 const FriendItem = styled.div`

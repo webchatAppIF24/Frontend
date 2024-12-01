@@ -4,31 +4,31 @@ import styled from 'styled-components';
 
 const Register = ({ onRegisterSuccess }) => {
     const [email, setEmail] = useState('');
-    const [username, setUsername] = useState('');
-    const [userId, setUserId] = useState('');
+    const [name, setname] = useState('');
+    const [loginId, setloginId] = useState('');
     const [password, setPassword] = useState('');
     const [birthday, setBirthday] = useState('');
     const [error, setError] = useState(null);
 
     const handleRegister = async () => {
-        if (!email || !username || !userId || !password || !birthday) {
+        if (!email || !name || !loginId || !password || !birthday) {
             setError('모든 필드를 입력해 주세요.');
             return;
         }
-
+        // https://dbaa09b2-5003-4c22-96e0-2f75681c514b.mock.pstmn.io/ : postman용 서버 주소
         try {
-            const response = await fetch('https://dbaa09b2-5003-4c22-96e0-2f75681c514b.mock.pstmn.io/', {       // postman에서 사용한 mock서버주소, 추후에 백엔드서버주소로 바꿔야함
+            console.log("body:", JSON.stringify({ email, name, loginId, password }));
+            const response = await fetch('http://localhost:8080/api/auth/register', {       // postman에서 사용한 mock서버주소, 추후에 백엔드서버주소로 바꿔야함
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, username, userId, password, birthday }),
+                body: JSON.stringify({ email, name, loginId, password }),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                onRegisterSuccess(data.userId, data.token); // 회원가입 성공 시 사용자 ID와 토큰을 전달
                 onRegisterSuccess();        //회원 가입 후 로그인 화면으로 이동 (직접 아이디와 패스워드를 입력하여 로그인하도록)
             } else {
                 setError(data.message || '회원가입에 실패했습니다.');
@@ -51,14 +51,14 @@ const Register = ({ onRegisterSuccess }) => {
             <Input
                 type="text"
                 placeholder="사용자명"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={name}
+                onChange={(e) => setname(e.target.value)}
             />
             <Input
                 type="text"
                 placeholder="사용자 ID"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                value={loginId}
+                onChange={(e) => setloginId(e.target.value)}
             />
             <Input
                 type="password"

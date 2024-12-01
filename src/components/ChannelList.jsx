@@ -5,18 +5,6 @@ const ChannelList = ({ server, channels, onSelectChannel, onRenameChannel }) => 
   const [editingChannel, setEditingChannel] = useState(null);
   const [newChannelName, setNewChannelName] = useState('');
 
-  const handleRenameClick = (channelName) => {
-    setEditingChannel(channelName);
-    setNewChannelName(channelName);
-  };
-
-  const handleRenameSubmit = (channelName) => {
-    if (newChannelName.trim() !== '') {
-      onRenameChannel(server, channelName, newChannelName);
-    }
-    setEditingChannel(null);
-  };
-
   return (
     <ChannelListContainer>
       <h3>{server} Channels</h3>
@@ -30,18 +18,14 @@ const ChannelList = ({ server, channels, onSelectChannel, onRenameChannel }) => 
                   value={newChannelName}
                   onChange={(e) => setNewChannelName(e.target.value)}
                 />
-                <SaveButton onClick={() => handleRenameSubmit(channel.name)}>
-                  Save
-                </SaveButton>
+                
               </>
             ) : (
               <>
                 <ChannelName onClick={() => onSelectChannel(channel.name)}>
                   #{channel.name}
                 </ChannelName>
-                <RenameButton onClick={() => handleRenameClick(channel.name)}>
-                  Rename
-                </RenameButton>
+                
               </>
             )}
           </ChannelItem>
